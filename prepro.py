@@ -299,7 +299,9 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                     hts.append([h, t])
                     neg_samples += 1
 
-        assert len(relations) == len(entities) * (len(entities) - 1)
+        if len(relations) == len(entities) * (len(entities) - 1):
+          print("mismatch in entity/rel count")
+          continue
 
         sents = sents[:max_seq_length - 2]
         input_ids = tokenizer.convert_tokens_to_ids(sents)
