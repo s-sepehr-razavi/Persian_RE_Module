@@ -312,10 +312,14 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
 
 
         i_line += 1
+        f = False
         for pos in entity_pos:
             if len(pos) == 0:
                 print("This doc contained an entity without position. Skip!")
-                continue
+                f=True
+                break
+        if f:
+            continue
         feature = {'input_ids': input_ids,
                 'entity_pos': entity_pos,
                 'labels': relations,
