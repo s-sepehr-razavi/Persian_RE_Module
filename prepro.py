@@ -229,8 +229,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
         data = data[:max_docs]
 
     re_fre = np.zeros(len(docred_rel2id) - 1)
-    # for idx, sample in tqdm(enumerate(data), desc="Example"):
-    f = False
+    # for idx, sample in tqdm(enumerate(data), desc="Example"):    
     for idx, sample in enumerate(tqdm(data)):
         sents = []
         sent_map = []
@@ -306,14 +305,17 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
           print("mismatch in entity/rel count")
           continue
 
-        if f:
-            print("the corresponding position of an enitty mention is empty; therefore, skipping it") #TODO
-            continue
+
         sents = sents[:max_seq_length - 2]
         input_ids = tokenizer.convert_tokens_to_ids(sents)
         input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
 
+
         i_line += 1
+        for pos in entity_pos:
+            if len(pos) == 0:
+                print("This doc contained an entity without position. Skip!")
+                continue
         feature = {'input_ids': input_ids,
                 'entity_pos': entity_pos,
                 'labels': relations,
