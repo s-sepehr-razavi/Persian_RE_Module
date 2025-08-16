@@ -239,9 +239,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
         for entity in entities:
             for mention in entity:
                 sent_id = mention["sent_id"]
-                pos = mention["pos"]
-                if len(pos) == 0:
-                    f = True
+                pos = mention["pos"]                
                 entity_start.append((sent_id, pos[0],))
                 entity_end.append((sent_id, pos[1] - 1,))
         for i_s, sent in enumerate(sample['sents']):
@@ -318,9 +316,8 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                 print("This doc contained an entity without position. Skip!")
                 f=True
                 break
-        if f:
-            print(entity_pos)
-            break
+        if f:            
+            continue
         feature = {'input_ids': input_ids,
                 'entity_pos': entity_pos,
                 'labels': relations,
