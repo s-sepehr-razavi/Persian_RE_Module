@@ -319,7 +319,8 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                 f=True
                 break
         if f:
-            continue
+            print(entity_pos)
+            break
         feature = {'input_ids': input_ids,
                 'entity_pos': entity_pos,
                 'labels': relations,
