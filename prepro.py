@@ -214,6 +214,35 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
     print("# rels per doc", 1. * rel_nums / i_line)
     return features, re_fre
 
+def ommiting_empty_entities(sample):
+
+    labels = sample['labels']
+    vertexSet = sample['vertexSet']
+
+    indicies = []
+    new_vertexSet = []
+    for i, v in enumerate(vertexSet):
+        if len(v) == 0:
+            indicies.append(i)
+        else:
+            new_vertexSet.append(v)
+    
+    new_labels = []
+    for label in labels:
+        if label['h'] in indicies or label['t'] in indicies:
+            continue
+        else:
+            for index in indicies:
+                if index < label['h']:
+                    label['h'] -= 1 
+                if index < label['t']:
+                    label['t'] -= 1 
+            new_labels.append(label)
+        
+        sample['labels'] = labels
+        sample['vertexSet'] = vertexSet
+    return sample
+
 def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
     i_line = 0
     pos_samples = 0
@@ -231,6 +260,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
     re_fre = np.zeros(len(docred_rel2id) - 1)
     # for idx, sample in tqdm(enumerate(data), desc="Example"):    
     for idx, sample in enumerate(tqdm(data)):
+        sample = ommiting_empty_entities(sample)
         sents = []
         sent_map = []
 
@@ -309,15 +339,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
         input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
 
 
-        i_line += 1
-        f = False
-        for pos in entity_pos:
-            if len(pos) == 0:
-                print("This doc contained an entity without position. Skip!")
-                f=True
-                break
-        if f:            
-            continue
+        i_line += 1        
         feature = {'input_ids': input_ids,
                 'entity_pos': entity_pos,
                 'labels': relations,
