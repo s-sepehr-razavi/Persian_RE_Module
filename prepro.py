@@ -330,11 +330,11 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                     neg_samples += 1
 
         if len(relations) != len(entities) * (len(entities) - 1):
-          
+          print(f"hts count: {len(hts)} relations count: {len(relations)}")
           for i, r in enumerate(hts):
               for j, s in enumerate(hts):
                   if i != j and r == s:
-                      print(i, j)
+                      print(f"the indices that have the same head and tail {i, j}")
 
           print(len(relations))
           print(len(entities) * (len(entities) - 1))
