@@ -239,8 +239,8 @@ def ommiting_empty_entities(sample):
                     label['t'] -= 1 
             new_labels.append(label)
         
-        sample['labels'] = labels
-        sample['vertexSet'] = vertexSet
+        sample['labels'] = new_labels
+        sample['vertexSet'] = new_vertexSet
     return sample
 
 def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
@@ -330,16 +330,17 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                     neg_samples += 1
 
         if len(relations) != len(entities) * (len(entities) - 1):
-          print(f"hts count: {len(hts)} relations count: {len(relations)}")
-          for i, r in enumerate(hts):
-              for j, s in enumerate(hts):
-                  if i != j and r[0] == s[0] and r[1] == s[1]:
-                      print(f"the indices that have the same head and tail {i, j}")
+            print(f"entities")
+            print(f"hts count: {len(hts)} relations count: {len(relations)}")
+            for i, r in enumerate(hts):
+                for j, s in enumerate(hts):
+                    if i != j and r[0] == s[0] and r[1] == s[1]:
+                        print(f"the indices that have the same head and tail {i, j}")
 
-          print(len(relations))
-          print(len(entities) * (len(entities) - 1))
-          print("mismatch in entity/rel count")
-          continue
+            print(len(relations))
+            print(len(entities) * (len(entities) - 1))
+            print("mismatch in entity/rel count")
+            continue
 
 
         sents = sents[:max_seq_length - 2]
