@@ -214,7 +214,7 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
     print("# rels per doc", 1. * rel_nums / i_line)
     return features, re_fre
 
-# def omiting_empty_entities(sample):
+# def omitting_empty_entities(sample):
 
 #     labels = sample['labels']
 #     vertexSet = sample['vertexSet']
@@ -289,7 +289,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
     re_fre = np.zeros(len(docred_rel2id) - 1)
     # for idx, sample in tqdm(enumerate(data), desc="Example"):    
     for idx, sample in enumerate(tqdm(data)):
-        sample = omiting_empty_entities(sample)
+        sample = omitting_empty_entities(sample)
         sents = []
         sent_map = []
 
