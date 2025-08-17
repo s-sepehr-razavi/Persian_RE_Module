@@ -239,8 +239,8 @@ def ommiting_empty_entities(sample):
                     label['t'] -= 1 
             new_labels.append(label)
         
-        sample['labels'] = new_labels
-        sample['vertexSet'] = new_vertexSet
+    sample['labels'] = new_labels
+    sample['vertexSet'] = new_vertexSet
     return sample
 
 def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
