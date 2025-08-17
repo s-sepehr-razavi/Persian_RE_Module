@@ -333,7 +333,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
           print(f"hts count: {len(hts)} relations count: {len(relations)}")
           for i, r in enumerate(hts):
               for j, s in enumerate(hts):
-                  if i != j and r == s:
+                  if i != j and r[0] == s[0] and r[1] == s[1]:
                       print(f"the indices that have the same head and tail {i, j}")
 
           print(len(relations))
