@@ -331,9 +331,9 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
 
         if len(relations) != len(entities) * (len(entities) - 1):
           
-          for i, r_h, r_t in enumerate(hts):
-              for j, s_h, s_t in enumerate(hts):
-                  if i != j and r_h == s_h and r_t == s_t:
+          for i, r in enumerate(hts):
+              for j, s in enumerate(hts):
+                  if i != j and r == s:
                       print(i, j)
 
           print(len(relations))
