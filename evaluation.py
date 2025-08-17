@@ -33,6 +33,34 @@ def to_official(preds, features):
                 )
     return res
 
+def omitting_empty_entities(sample):
+    labels = sample['labels']
+    vertexSet = sample['vertexSet']
+
+    # Build mapping from old indices to new indices
+    index_map = {}
+    new_vertexSet = []
+    for old_idx, v in enumerate(vertexSet):
+        if len(v) > 0:
+            new_idx = len(new_vertexSet)
+            new_vertexSet.append(v)
+            index_map[old_idx] = new_idx
+
+    # Update labels
+    new_labels = []
+    for label in labels:
+        h, t = label['h'], label['t']
+        if h not in index_map or t not in index_map:
+            continue  # skip labels pointing to removed entities
+        new_label = label.copy()
+        new_label['h'] = index_map[h]
+        new_label['t'] = index_map[t]
+        new_labels.append(new_label)
+
+    sample['labels'] = new_labels
+    sample['vertexSet'] = new_vertexSet
+    return sample
+
 def gen_train_facts(data_file_name, truth_dir):
     fact_file_name = data_file_name[data_file_name.find("train_"):]
     fact_file_name = os.path.join(truth_dir, fact_file_name.replace(".json", ".fact"))
@@ -47,6 +75,7 @@ def gen_train_facts(data_file_name, truth_dir):
     fact_in_train = set([])
     ori_data = json.load(open(data_file_name))
     for data in ori_data:
+        data = omitting_empty_entities(data)
         vertexSet = data['vertexSet']
         for label in data['labels']:
             rel = label['r']
@@ -86,6 +115,7 @@ def official_evaluate(tmp, path, tag, args):
 
     title2vectexSet = {}
     for x in truth:
+        x = omitting_empty_entities(x)
         title = x['title']
         titleset.add(title)
 
