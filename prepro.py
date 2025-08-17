@@ -330,6 +330,12 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                     neg_samples += 1
 
         if len(relations) != len(entities) * (len(entities) - 1):
+          
+          for i, r in enumerate(relations):
+              for j, s in enumerate(relations):
+                  if i != j and r['h'] == s['h'] and r['t'] == s['t']:
+                      print(i, j)
+
           print(len(relations))
           print(len(entities) * (len(entities) - 1))
           print("mismatch in entity/rel count")
