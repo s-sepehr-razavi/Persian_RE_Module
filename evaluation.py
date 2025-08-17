@@ -98,7 +98,7 @@ def official_evaluate(tmp, path, tag, args):
         os.makedirs(truth_dir)
 
     fact_in_train_annotated = gen_train_facts(os.path.join(path, args.train_file), truth_dir)
-    fact_in_train_distant = gen_train_facts(os.path.join(path, "train_distant.json"), truth_dir)
+    # fact_in_train_distant = gen_train_facts(os.path.join(path, "train_distant.json"), truth_dir)
 
     if tag == 'dev':
         truth = json.load(open(os.path.join(path, args.dev_file)))
@@ -151,7 +151,7 @@ def official_evaluate(tmp, path, tag, args):
     pred_evi = 0
 
     correct_in_train_annotated = 0
-    correct_in_train_distant = 0
+    # correct_in_train_distant = 0
     titleset2 = set([])
     for x in submission_answer:
         title = x['title']
@@ -181,18 +181,19 @@ def official_evaluate(tmp, path, tag, args):
             correct_re += 1
             stdevi = std[(title, r, h_idx, t_idx)]
             correct_evidence += len(stdevi & evi)
-            in_train_annotated = in_train_distant = False
+            in_train_annotated = False
+            #  in_train_distant = False
             for n1 in vertexSet[h_idx]:
                 for n2 in vertexSet[t_idx]:
                     if (n1['name'], n2['name'], r) in fact_in_train_annotated:
                         in_train_annotated = True
-                    if (n1['name'], n2['name'], r) in fact_in_train_distant:
-                        in_train_distant = True
+                    # if (n1['name'], n2['name'], r) in fact_in_train_distant:
+                    #     in_train_distant = True
 
             if in_train_annotated:
                 correct_in_train_annotated += 1
-            if in_train_distant:
-                correct_in_train_distant += 1
+            # if in_train_distant:
+            #     correct_in_train_distant += 1
 
     re_p = 1.0 * correct_re / len(submission_answer)
     re_r = 1.0 * correct_re / tot_relations
@@ -209,16 +210,17 @@ def official_evaluate(tmp, path, tag, args):
         evi_f1 = 2.0 * evi_p * evi_r / (evi_p + evi_r)
 
     re_p_ignore_train_annotated = 1.0 * (correct_re - correct_in_train_annotated) / (len(submission_answer) - correct_in_train_annotated + 1e-5)
-    re_p_ignore_train = 1.0 * (correct_re - correct_in_train_distant) / (len(submission_answer) - correct_in_train_distant + 1e-5)
+    # re_p_ignore_train = 1.0 * (correct_re - correct_in_train_distant) / (len(submission_answer) - correct_in_train_distant + 1e-5)
 
     if re_p_ignore_train_annotated + re_r == 0:
         re_f1_ignore_train_annotated = 0
     else:
         re_f1_ignore_train_annotated = 2.0 * re_p_ignore_train_annotated * re_r / (re_p_ignore_train_annotated + re_r)
 
-    if re_p_ignore_train + re_r == 0:
-        re_f1_ignore_train = 0
-    else:
-        re_f1_ignore_train = 2.0 * re_p_ignore_train * re_r / (re_p_ignore_train + re_r)
+    # if re_p_ignore_train + re_r == 0:
+    #     re_f1_ignore_train = 0
+    # else:
+    #     re_f1_ignore_train = 2.0 * re_p_ignore_train * re_r / (re_p_ignore_train + re_r)
 
-    return re_f1, evi_f1, re_f1_ignore_train_annotated, re_f1_ignore_train, re_p, re_r
+    # return re_f1, evi_f1, re_f1_ignore_train_annotated, re_f1_ignore_train, re_p, re_r
+    return re_f1, evi_f1, re_f1_ignore_train_annotated, re_p, re_r
