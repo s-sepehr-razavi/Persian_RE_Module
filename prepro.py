@@ -214,34 +214,63 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
     print("# rels per doc", 1. * rel_nums / i_line)
     return features, re_fre
 
-def ommiting_empty_entities(sample):
+# def ommiting_empty_entities(sample):
 
+#     labels = sample['labels']
+#     vertexSet = sample['vertexSet']
+
+#     indicies = []
+#     new_vertexSet = []
+#     for i, v in enumerate(vertexSet):
+#         if len(v) == 0:
+#             indicies.append(i)
+#         else:
+#             new_vertexSet.append(v)
+    
+#     new_labels = []
+#     for label in labels:
+#         if label['h'] in indicies or label['t'] in indicies:
+#             continue
+#         else:
+#             for index in indicies:
+#                 if index < label['h']:
+#                     label['h'] -= 1 
+#                 if index < label['t']:
+#                     label['t'] -= 1 
+#             new_labels.append(label)
+        
+#     sample['labels'] = new_labels
+#     sample['vertexSet'] = new_vertexSet
+#     return sample
+
+def omitting_empty_entities(sample):
     labels = sample['labels']
     vertexSet = sample['vertexSet']
 
-    indicies = []
+    # Build mapping from old indices to new indices
+    index_map = {}
     new_vertexSet = []
-    for i, v in enumerate(vertexSet):
-        if len(v) == 0:
-            indicies.append(i)
-        else:
+    for old_idx, v in enumerate(vertexSet):
+        if len(v) > 0:
+            new_idx = len(new_vertexSet)
             new_vertexSet.append(v)
-    
+            index_map[old_idx] = new_idx
+
+    # Update labels
     new_labels = []
     for label in labels:
-        if label['h'] in indicies or label['t'] in indicies:
-            continue
-        else:
-            for index in indicies:
-                if index < label['h']:
-                    label['h'] -= 1 
-                if index < label['t']:
-                    label['t'] -= 1 
-            new_labels.append(label)
-        
+        h, t = label['h'], label['t']
+        if h not in index_map or t not in index_map:
+            continue  # skip labels pointing to removed entities
+        new_label = label.copy()
+        new_label['h'] = index_map[h]
+        new_label['t'] = index_map[t]
+        new_labels.append(new_label)
+
     sample['labels'] = new_labels
     sample['vertexSet'] = new_vertexSet
     return sample
+
 
 def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
     i_line = 0
