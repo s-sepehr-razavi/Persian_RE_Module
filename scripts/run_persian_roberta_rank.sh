@@ -20,7 +20,7 @@ python train2.py --data_dir /content \
     --model_type ttmre \
     --m 1.0 \
     --e 1.0 \
-    --pretrain_distant 3\
+    --pretrain_distant 0\
     --num_layers 4
 
 
