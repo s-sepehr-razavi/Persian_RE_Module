@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import copy
 import pickle
+import torch.nn as nn
 # from apex import amp
 # import ujson as json
 from torch.utils.data import DataLoader
@@ -384,6 +385,8 @@ def main():
 
     parser.add_argument('--num_layers', type=int, default=2, help="num_layers for ttm")
     parser.add_argument('--memory_size', type=int, default=200, help="memory_size for ttm, originally 200, cut to new_memory_size")
+    parser.add_argument('--parallel_training', action='store_true', help='using multiple gpus for training')
+
 
     args = parser.parse_args()
     # assert args.is_rank == 1
@@ -403,7 +406,10 @@ def main():
         os.mkdir(args.save_path)
     print(args.save_path)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if args.parallel_training:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.n_gpu = torch.cuda.device_count()
     args.device = device
     # print({k:str(v) for k,v in vars(args).items()}); quit()
@@ -453,7 +459,9 @@ def main():
     # print('priors', priors); quit()
     priors = torch.tensor(priors).to(args.device)
     model = DocREModel(args, config, priors, model, tokenizer)
-    model.to(0)
+    if args.parallel_training:
+        model = nn.DataParallel(model)
+    model.to(device)
 
     print(args.m_tag, args.isrank)
 
