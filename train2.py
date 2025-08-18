@@ -165,7 +165,8 @@ def cal_val_risk(args, model, features, tag="dev"):
     preds = np.concatenate(preds, axis=0).astype(np.float32)
     ans = to_official(preds, features)
     if len(ans) > 0:
-        best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
+        # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
+        best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
         output = {
             tag + "_F1": best_f1 * 100,
             tag + "_F1_ign": best_f1_ign * 100,
@@ -227,9 +228,11 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
 
     if len(ans) > 0:
         if eval_top_10:
-            best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
+            # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
+            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
             print("top10", best_f1, best_f1_ign, re_p, re_r)
-            best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testbottom90', args=args)
+            # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testbottom90', args=args)
+            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
             print("testbottom90", best_f1, best_f1_ign, re_p, re_r)
             
         # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
