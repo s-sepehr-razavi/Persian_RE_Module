@@ -6,7 +6,7 @@ python train2.py --data_dir ./dataset/docred \
     --train_file train_revised.json \
     --dev_file dev_revised.json \
     --test_file test_revised.json \
-    --train_batch_size 4 \
+    --train_batch_size 1 \
     --test_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --learning_rate 3e-5 \
