@@ -105,6 +105,7 @@ class DocREModel(nn.Module):
         self.emb_size = emb_size
         self.block_size = block_size
 
+        # Partition
         # ========== ATLOP ==========
         self.head_extractor = nn.Linear(2 * config.hidden_size, emb_size)
         self.tail_extractor = nn.Linear(2 * config.hidden_size, emb_size)
@@ -149,6 +150,7 @@ class DocREModel(nn.Module):
         # print(all_embeddings.shape)
         return all_embeddings
 
+    # Partition
     def encode(self, input_ids, attention_mask):
         config = self.config
         if config.transformer_type == "bert":
@@ -244,6 +246,7 @@ class DocREModel(nn.Module):
         hs, rs, ts = self.get_hrt(sequence_output, attention, entity_pos, hts)
         # print(hs.shape, rs.shape, ts.shape)
 
+        # Partition
         if self.args.model_type == 'ATLOP':
             hs = torch.tanh(self.head_extractor(torch.cat([hs, rs], dim=1)))    # zs
             ts = torch.tanh(self.tail_extractor(torch.cat([ts, rs], dim=1)))    # zo
@@ -293,7 +296,8 @@ class DocREModel(nn.Module):
                 if m_tag == 'increase':
                     risk_sum.append(-logits.mean() * loss_weight)
                     # continue
-                    
+
+                # Partition
                 if m_tag == 'ATLoss':
                     assert self.args.isrank == True
                     """https://github.com/YoumiMa/dreeam/blob/main/losses.py"""
