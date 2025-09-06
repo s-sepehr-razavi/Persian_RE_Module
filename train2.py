@@ -16,6 +16,7 @@ from tqdm import tqdm
 import random
 
 from model2 import DocREModel
+from model_modular import PartitionedDocREModel
 from prepro import read_docred, read_chemdisgene
 from evaluation import official_evaluate, to_official
 
@@ -46,7 +47,7 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
     optimizer_grouped_parameters = [
         {"params": [p for n, p in model.named_parameters() if not any(nd in n for nd in new_layer)], },
         {"params": [p for n, p in model.named_parameters() if any(nd in n for nd in new_layer)], "lr": lr},
-    ]
+    ] 
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
             
     # model, optimizer = amp.initialize(model, optimizer, opt_level="O1", verbosity=0)
@@ -78,8 +79,8 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
             model.train()
             # # print(switch)
 
-            inputs = {'input_ids': batch[0].to(args.device),
-                    'attention_mask': batch[1].to(args.device),
+            inputs = {'input_ids': batch[0].to(args.devices[0]),
+                    'attention_mask': batch[1].to(args.devices[0]),
                     'labels': batch[2],
                     'entity_pos': batch[3],
                     'hts': batch[4],
@@ -383,6 +384,7 @@ def main():
 
     parser.add_argument('--num_layers', type=int, default=2, help="num_layers for ttm")
     parser.add_argument('--memory_size', type=int, default=200, help="memory_size for ttm, originally 200, cut to new_memory_size")
+    parser.add_argument("--split_model", action="store_true", help="Enable model splitting. Default is False.")
 
     args = parser.parse_args()
     # assert args.is_rank == 1
@@ -402,9 +404,14 @@ def main():
         os.mkdir(args.save_path)
     print(args.save_path)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    args.n_gpu = torch.cuda.device_count()
-    args.device = device
+    if args.split_model:        
+        devices = [torch.device("cuda:0"), torch.device("cuda:1")]  # split case
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        args.n_gpu = torch.cuda.device_count()
+        devices = [device]
+    args.devices = devices
+
     # print({k:str(v) for k,v in vars(args).items()}); quit()
 
     config = AutoConfig.from_pretrained(
@@ -438,11 +445,18 @@ def main():
 
     # dev_features = train_features + dev_features
 
-    model = AutoModel.from_pretrained(
-        args.model_name_or_path,
-        from_tf=bool(".ckpt" in args.model_name_or_path),
-        config=config,
-    ).to(args.device)
+    if args.split_model:
+        model = AutoModel.from_pretrained(
+            args.model_name_or_path,
+            from_tf=bool(".ckpt" in args.model_name_or_path),
+            config=config,
+        )
+    else:
+        model = AutoModel.from_pretrained(
+            args.model_name_or_path,
+            from_tf=bool(".ckpt" in args.model_name_or_path),
+            config=config,
+        ).to(args.device)
 
     config.cls_token_id = tokenizer.cls_token_id
     config.sep_token_id = tokenizer.sep_token_id
@@ -450,9 +464,11 @@ def main():
 
     set_seed(args)
     # print('priors', priors); quit()
-    priors = torch.tensor(priors).to(args.device)
-    model = DocREModel(args, config, priors, model, tokenizer)
-    model.to(0)
+    if args.split_model:
+        priors = torch.tensor(priors).to(args.devices[0])
+        model = DocREModel(args, config, priors, model, tokenizer)        
+    else:        
+        model = PartitionedDocREModel(args, config, priors, model, tokenizer, args.devices)        
 
     print(args.m_tag, args.isrank)
 
