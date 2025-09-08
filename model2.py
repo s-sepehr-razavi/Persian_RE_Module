@@ -12,7 +12,7 @@ ID2REL = {"P6": "head of government", "P17": "country", "P19": "place of birth",
 
 def process_long_input(model, input_ids, attention_mask, start_tokens, end_tokens, max_len=512):
     # Split the input to 2 overlapping chunks. Now BERT can encode inputs of which the length are up to 1024.
-    n, c = input_ids.size()
+    n, c = input_ids.size() # batch_size / number of tokens (paddings are also considered)
     start_tokens = torch.tensor(start_tokens).to(input_ids)
     end_tokens = torch.tensor(end_tokens).to(input_ids)
     len_start = start_tokens.size(0)
@@ -27,16 +27,16 @@ def process_long_input(model, input_ids, attention_mask, start_tokens, end_token
         attention = output[-1][-1]
     else:
         new_input_ids, new_attention_mask, num_seg = [], [], []
-        seq_len = attention_mask.sum(1).cpu().numpy().astype(np.int32).tolist()
+        seq_len = attention_mask.sum(1).cpu().numpy().astype(np.int32).tolist() # the count of real tokens
         for i, l_i in enumerate(seq_len):
             if l_i <= max_len:
                 new_input_ids.append(input_ids[i, :max_len])
                 new_attention_mask.append(attention_mask[i, :max_len])
                 num_seg.append(1)
             else:
-                input_ids1 = torch.cat([input_ids[i, :max_len - len_end], end_tokens], dim=-1)
-                input_ids2 = torch.cat([start_tokens, input_ids[i, (l_i - max_len + len_start): l_i]], dim=-1)
-                attention_mask1 = attention_mask[i, :max_len]
+                input_ids1 = torch.cat([input_ids[i, :max_len - len_end], end_tokens], dim=-1) # selecting tokens from the start of the sequence
+                input_ids2 = torch.cat([start_tokens, input_ids[i, (l_i - max_len + len_start): l_i]], dim=-1) # selecting tokens from the end of the sequence
+                attention_mask1 = attention_mask[i, :max_len] # not considering start and end tokens?
                 attention_mask2 = attention_mask[i, (l_i - max_len): l_i]
                 new_input_ids.extend([input_ids1, input_ids2])
                 new_attention_mask.extend([attention_mask1, attention_mask2])
@@ -54,7 +54,7 @@ def process_long_input(model, input_ids, attention_mask, start_tokens, end_token
         new_output, new_attention = [], []
         for (n_s, l_i) in zip(num_seg, seq_len):
             if n_s == 1:
-                output = F.pad(sequence_output[i], (0, 0, 0, c - max_len))
+                output = F.pad(sequence_output[i], (0, 0, 0, c - max_len)) # adding a new row
                 att = F.pad(attention[i], (0, c - max_len, 0, c - max_len))
                 new_output.append(output)
                 new_attention.append(att)
@@ -88,7 +88,7 @@ class DocREModel(nn.Module):
         super().__init__()
         self.args = args
         self.config = config
-        self.model = model
+        self.model = model        
         self.tokenizer = tokenizer
         self.hidden_size = config.hidden_size
         self.priors_l = priors_l
