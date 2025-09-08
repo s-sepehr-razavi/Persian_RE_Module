@@ -473,7 +473,7 @@ def main():
             print("PRETRAINING")
             print("pretrain distant", args.pretrain_distant)
             temp_epochs = args.num_train_epochs
-            args.num_train_epochs = 2
+            # args.num_train_epochs = 2
             if args.pretrain_distant == 0: # pretrain on train and quit()
                 train(args, model, train_features, dev_features, lr=1e-4)
                 torch.save(model.state_dict(), os.path.join(args.save_path, "pretrain_state_dict.pth")); quit()
