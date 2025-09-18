@@ -171,7 +171,7 @@ class RelationExtractor:
         
         mentions_dict = {}
         tokens_list = []
-        for sent_idx, tokens, phrase_spans in enumerate(tokens_offsets):
+        for sent_idx, (tokens, phrase_spans) in enumerate(tokens_offsets):
             for entity in entities:
                 mentions = []
                 for span_start, span_end in phrase_spans[entity]:
