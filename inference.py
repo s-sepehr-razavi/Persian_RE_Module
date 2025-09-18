@@ -124,8 +124,8 @@ class RelationExtractor:
 
     def _find_all_phrase_token_spans(self, text, phrases):
 
-        tokens = self.tokenizer.tokenize(text)
-        offsets = self.compute_offsets_from_tokens(text, tokens)
+        tokens = self.docre_tokenizer.tokenize(text)
+        offsets = self.ـcompute_offsets_from_tokens(text, tokens)
 
         results = {}  # { phrase: [(start_token_idx, end_token_idx), ...] }
 
@@ -247,11 +247,12 @@ class RelationExtractor:
                 }    
         return feature
     
-    def predict(self, text):
+    def predict(self, text, entities=None):
         # Step 1: Run NER
-        entities = self.ner_pipeline.extract_entities(text)
         if not entities:
-            return [], [], []
+            entities = self.ner_pipeline.extract_entities(text)
+            if not entities:
+                return [], [], []
 
         # Step 2: Tokenize + map entities to token spans                
         
