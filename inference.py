@@ -162,7 +162,6 @@ class RelationExtractor:
 
     def _tokenize_for_docre(self, text, entities):
         """Tokenize text with Hazm and manually compute offsets"""
-        text = self.normalizer.normalize(text)
         sentences = self.sentence_tokenizer.tokenize(text)
 
         tokens_offsets = []
@@ -249,6 +248,8 @@ class RelationExtractor:
         return feature
     
     def predict(self, text, entities=None):
+        text = self.normalizer.normalize(text)
+        entities = [self.normalizer.normalize(entity) for entity in entities]
         # Step 1: Run NER
         if not entities:
             entities = self.ner_pipeline.extract_entities(text)
