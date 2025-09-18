@@ -249,7 +249,7 @@ class RelationExtractor:
     
     def predict(self, text):
         # Step 1: Run NER
-        entities = self.ner_pipeline(text)
+        entities = self.ner_pipeline.extract_entities(text)
         if not entities:
             return [], [], []
 
