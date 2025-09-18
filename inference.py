@@ -180,6 +180,7 @@ class RelationExtractor:
                         "pos": [span_start, span_end],
                         "sent_id": sent_idx,                        
                     }
+                    mentions.append(mention)
                 if entity in mentions_dict:
                     mentions_dict[entity] += mentions
                 else:
