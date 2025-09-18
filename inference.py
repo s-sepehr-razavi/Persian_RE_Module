@@ -99,11 +99,15 @@ class RelationExtractor:
 
         # Load DocRE model
         config = AutoConfig.from_pretrained(docre_model_name, num_labels=num_class)
+
         
         backbone = AutoModel.from_pretrained(docre_model_name, config=config).to(self.device)
+        self.model_tokenizer = AutoTokenizer.from_pretrained(docre_model_name)
+        config.cls_token_id = self.model_tokenizer.cls_token_id
+        config.sep_token_id = self.model_tokenizer.sep_token_id
+        config.transformer_type = args.transformer_type
         priors = torch.ones(num_class).to(self.device) * 1e-9
         self.docre_model = DocREModel(args, config, priors, backbone, self.docre_tokenizer).to(self.device)
-        self.model_tokenizer = AutoTokenizer.from_pretrained(docre_model_name)
         self.docre_model.load_state_dict(torch.load(docre_checkpoint, map_location=self.device))
         self.docre_model.eval()
 
