@@ -125,7 +125,7 @@ class RelationExtractor:
     def _find_all_phrase_token_spans(self, text, phrases):
 
         tokens = self.docre_tokenizer.tokenize(text)
-        offsets = self.ـcompute_offsets_from_tokens(text, tokens)
+        offsets = self._compute_offsets_from_tokens(text, tokens)
 
         results = {}  # { phrase: [(start_token_idx, end_token_idx), ...] }
 
