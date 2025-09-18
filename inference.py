@@ -1,15 +1,90 @@
 import torch
 import numpy as np
 from transformers import AutoTokenizer, AutoModel, AutoConfig
-from model2 import DocREModel
+from TTM.model2 import DocREModel
 from hazm import *
-from ner import PersianNER
+from TTM.ner import PersianNER
+from dataclasses import dataclass
+
+@dataclass
+class TrainArgs:
+    data_dir: str
+    transformer_type: str
+    model_name_or_path: str
+    train_file: str
+    dev_file: str
+    test_file: str
+    train_batch_size: int
+    test_batch_size: int
+    gradient_accumulation_steps: int
+    learning_rate: float
+    max_grad_norm: float
+    warmup_ratio: float
+    num_train_epochs: float
+    seed: int
+    num_class: int
+    isrank: int
+    m_tag: str
+    model_type: str
+    m: float
+    e: float
+    pretrain_distant: int
+
+# Example usage:
+args = TrainArgs(
+    data_dir="/kaggle/working",
+    transformer_type="bert",
+    model_name_or_path="HooshvareLab/bert-fa-base-uncased",
+    train_file="train_revised.json",
+    dev_file="dev_revised.json",
+    test_file="test_revised.json",
+    train_batch_size=1,
+    test_batch_size=1,
+    gradient_accumulation_steps=1,
+    learning_rate=3e-5,
+    max_grad_norm=1.0,
+    warmup_ratio=0.06,
+    num_train_epochs=30.0,
+    seed=74,
+    num_class=97,
+    isrank=1,
+    m_tag="ATLoss",
+    model_type="ATLOP",
+    m=1.0,
+    e=3.0,
+    pretrain_distant=0
+)
 
 
 
 class RelationExtractor:
-    def __init__(self, ner_model_name, docre_model_name, docre_checkpoint, api_key, num_class=97, device=None):
+    def __init__(self, docre_model_name, docre_checkpoint, api_key, num_class=97, device=None):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.args = TrainArgs(
+            data_dir="/kaggle/working",
+            transformer_type="bert",
+            model_name_or_path="HooshvareLab/bert-fa-base-uncased",
+            train_file="train_revised.json",
+            dev_file="dev_revised.json",
+            test_file="test_revised.json",
+            train_batch_size=1,
+            test_batch_size=1,
+            gradient_accumulation_steps=1,
+            learning_rate=3e-5,
+            max_grad_norm=1.0,
+            warmup_ratio=0.06,
+            num_train_epochs=30.0,
+            seed=74,
+            num_class=97,
+            isrank=1,
+            m_tag="ATLoss",
+            model_type="ATLOP",
+            m=1.0,
+            e=3.0,
+            pretrain_distant=0
+        )
+
 
         # Load NER pipeline
         self.ner_pipeline = PersianNER(api_key)
@@ -27,7 +102,7 @@ class RelationExtractor:
         
         backbone = AutoModel.from_pretrained(docre_model_name, config=config).to(self.device)
         priors = torch.ones(num_class).to(self.device) * 1e-9
-        self.docre_model = DocREModel(None, config, priors, backbone, self.docre_tokenizer).to(self.device)
+        self.docre_model = DocREModel(args, config, priors, backbone, self.docre_tokenizer).to(self.device)
         self.model_tokenizer = AutoTokenizer.from_pretrained(docre_model_name)
         self.docre_model.load_state_dict(torch.load(docre_checkpoint, map_location=self.device))
         self.docre_model.eval()
