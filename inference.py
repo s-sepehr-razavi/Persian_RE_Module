@@ -281,7 +281,7 @@ class RelationExtractor:
         masked_feature = self._collate_fn(feature)
         # Step 5: Run DocREModel
         with torch.no_grad():
-            outputs = self.docre_model(**masked_feature)
+            outputs = self.docre_model(masked_feature)
         logits = outputs[1].cpu().numpy()
 
         # Step 6: Convert logits to binary predictions
