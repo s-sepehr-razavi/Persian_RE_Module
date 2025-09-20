@@ -262,6 +262,20 @@ class RelationExtractor:
                 }    
         return [feature]
     
+
+    def _get_label(self, logits, num_labels=-1):
+        th_logit = logits[:, 0].unsqueeze(1)
+        output = torch.zeros_like(logits).to(logits)
+        mask = (logits > th_logit)
+        if num_labels > 0:
+            top_v, _ = torch.topk(logits, num_labels, dim=1)
+            top_v = top_v[:, -1]
+            mask = (logits >= top_v.unsqueeze(1)) & mask
+        output[mask] = 1.0
+        output[:, 0] = (output.sum(1) == 0.).to(logits)
+        return output
+    
+
     def predict(self, text, entities=None):
         text = self.normalizer.normalize(text)
         entities = [self.normalizer.normalize(entity) for entity in entities]
@@ -284,10 +298,6 @@ class RelationExtractor:
             outputs = self.docre_model(masked_feature[0], masked_feature[1],entity_pos=masked_feature[2], hts=masked_feature[3])
         logits = outputs[1].cpu().numpy()
 
-        # Step 6: Convert logits to binary predictions
-        preds = np.zeros((logits.shape[0], logits.shape[1] + 1))
-        for i in range(logits.shape[1]):
-            preds[(logits[:, i] > 0.), i + 1] = 1
-        preds[:, 0] = (preds.sum(1) == 0)
+        preds = self._get_label(logits)
 
         return preds, entities, feature['hts']
