@@ -195,6 +195,17 @@ class RelationExtractor:
 
         return tokens_list, entity_mentions
 
+    def _collate_fn(batch):
+        max_len = max([len(f["input_ids"]) for f in batch])
+        input_ids = [f["input_ids"] + [0] * (max_len - len(f["input_ids"])) for f in batch]
+        input_mask = [[1.0] * len(f["input_ids"]) + [0.0] * (max_len - len(f["input_ids"])) for f in batch]        
+        entity_pos = [f["entity_pos"] for f in batch]
+        hts = [f["hts"] for f in batch]
+        input_ids = torch.tensor(input_ids, dtype=torch.long)
+        input_mask = torch.tensor(input_mask, dtype=torch.float)
+        output = (input_ids, input_mask, entity_pos, hts)
+        return output
+
     def _prepare_feature(self, entities, sentences, max_seq_length=1024):          
         sents = []
         sent_map = []
@@ -249,7 +260,7 @@ class RelationExtractor:
                 'entity_pos': entity_pos,                
                 'hts': hts,            
                 }    
-        return feature
+        return [feature]
     
     def predict(self, text, entities=None):
         text = self.normalizer.normalize(text)
@@ -267,9 +278,10 @@ class RelationExtractor:
 
         feature = self._prepare_feature(entity_mentions, tokens_list)
 
+        masked_feature = self._collate_fn(feature)
         # Step 5: Run DocREModel
         with torch.no_grad():
-            outputs = self.docre_model(**feature)
+            outputs = self.docre_model(**masked_feature)
         logits = outputs[1].cpu().numpy()
 
         # Step 6: Convert logits to binary predictions
