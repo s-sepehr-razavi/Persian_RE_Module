@@ -298,6 +298,6 @@ class RelationExtractor:
             outputs = self.docre_model(masked_feature[0], masked_feature[1],entity_pos=masked_feature[2], hts=masked_feature[3])
         logits = outputs[1].cpu().numpy()
 
-        preds = self._get_label(logits)
+        preds = self._get_label(outputs)
 
         return preds, entities, feature['hts']
