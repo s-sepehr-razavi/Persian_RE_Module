@@ -195,7 +195,7 @@ class RelationExtractor:
 
         return tokens_list, entity_mentions
 
-    def _collate_fn(batch):
+    def _collate_fn(self, batch):
         max_len = max([len(f["input_ids"]) for f in batch])
         input_ids = [f["input_ids"] + [0] * (max_len - len(f["input_ids"])) for f in batch]
         input_mask = [[1.0] * len(f["input_ids"]) + [0.0] * (max_len - len(f["input_ids"])) for f in batch]        
