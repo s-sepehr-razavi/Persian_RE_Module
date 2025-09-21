@@ -379,7 +379,7 @@ def main():
                         help="random seed for initialization")
     parser.add_argument("--num_class", type=int, default=97,
                         help="Number of relation types in dataset.")
-    parser.add_argument("--isrank", type=int, default='1 means use ranking loss, 0 means not use')
+    parser.add_argument("--isrank", type=int, default=1, help='1 means use ranking loss, 0 means not use')
     parser.add_argument("--m_tag", type=str, default='PN/PU/S-PU')
     parser.add_argument('--beta', type=float, default=0.0, help='beta of pu learning (default 0.0)')
     parser.add_argument('--gamma', type=float, default=1.0, help='gamma of pu learning (default 1.0)')

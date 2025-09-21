@@ -1,7 +1,7 @@
 #!/bin/sh
 
 python train2.py --data_dir /kaggle/working \
-    --transformer_type bert \    
+    --transformer_type bert \
     --train_file train_revised.json \
     --dev_file dev_revised.json \
     --test_file test_revised.json \
@@ -19,7 +19,7 @@ python train2.py --data_dir /kaggle/working \
     --model_type ATLOP \
     --m 1.0 \
     --e 3.0 \
-    --pretrain_distant 0 \    
+    --pretrain_distant 0 \
     --dummy_test
     # --parallel_training
 
