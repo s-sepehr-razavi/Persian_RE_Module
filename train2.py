@@ -438,9 +438,9 @@ def main():
     train_file = os.path.join(args.data_dir, args.train_file)
     dev_file = os.path.join(args.data_dir, args.dev_file)
     test_file = os.path.join(args.data_dir, args.test_file)
-
-    train_features, priors = read(args, train_file, tokenizer, max_seq_length=args.max_seq_length)
-    dev_features, _ = read(args, dev_file, tokenizer, max_seq_length=args.max_seq_length)
+    if args.dummy_test:
+        train_features, priors = read(args, train_file, tokenizer, max_seq_length=args.max_seq_length)
+        dev_features, _ = read(args, dev_file, tokenizer, max_seq_length=args.max_seq_length)
     test_features, _ = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
 
     # train_features = train_features[:100]
@@ -449,7 +449,8 @@ def main():
 
     # what if we use true priors?
     # test_features, priors = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
-    priors += 1e-9
+    if not args.dummy_test:
+        priors += 1e-9
 
     # dev_features = train_features + dev_features
 
@@ -466,11 +467,11 @@ def main():
 
     set_seed(args)
     # print('priors', priors); quit()
-    priors = torch.tensor(priors).to(args.device)
     if args.dummy_test:
         model = DummyModel(num_class=args.num_class)
     else:
         model = DocREModel(args, config, priors, model, tokenizer)
+        priors = torch.tensor(priors).to(args.device)
 
     if args.parallel_training:
         model = nn.DataParallel(model)
@@ -483,6 +484,7 @@ def main():
         # model = amp.initialize(model, opt_level="O1", verbosity=0)        
         test_score, test_output = evaluate(args, model, test_features, tag="test")
         print(test_output)
+        return
 
     if args.load_path == "":  # Training
         if args.model_type in ['simple', 'ttmre', 'ATLOP']:
