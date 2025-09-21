@@ -399,18 +399,18 @@ def main():
 
     args = parser.parse_args()
     # assert args.is_rank == 1
-
-    file_name = "{}_{}_{}_{}_{}_isrank_{}_m_{}_e_{}_seed_{}".format(
-        args.train_file.split('.')[0],
-        args.transformer_type,
-        args.model_type,
-        args.data_dir.split('/')[-1],
-        args.m_tag,
-        str(args.isrank),
-        args.m,
-        args.e,
-        str(args.seed))
-    args.save_path = os.path.join(args.save_path, file_name)
+    if not args.finetuned_test:
+        file_name = "{}_{}_{}_{}_{}_isrank_{}_m_{}_e_{}_seed_{}".format(
+            args.train_file.split('.')[0],
+            args.transformer_type,
+            args.model_type,
+            args.data_dir.split('/')[-1],
+            args.m_tag,
+            str(args.isrank),
+            args.m,
+            args.e,
+            str(args.seed))
+        args.save_path = os.path.join(args.save_path, file_name)
     if not os.path.exists(args.save_path):
         os.mkdir(args.save_path)
     print(args.save_path)
