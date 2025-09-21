@@ -201,7 +201,7 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
             output = model(**inputs)
             logits = output[1].cpu().numpy()
 
-            if not args.dummy_test:
+            if not (args.dummy_test or args.finetuned_test):
                 sims = [model.sims[0].cpu().numpy(), model.sims[1].cpu().numpy()]
 
             if args.isrank:
@@ -217,7 +217,7 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
 
             preds.append(pred)
             labels.append(batch[2])
-            if not args.dummy_test:
+            if not (args.dummy_test or args.finetuned_test):
                 sims_list.append(sims)  
 
     preds = np.concatenate(preds, axis=0).astype(np.float32)
