@@ -439,7 +439,7 @@ def main():
     train_file = os.path.join(args.data_dir, args.train_file)
     dev_file = os.path.join(args.data_dir, args.dev_file)
     test_file = os.path.join(args.data_dir, args.test_file)
-    if not (args.dummy_test or args.finetuned_test):
+    if not args.dummy_test:
         train_features, priors = read(args, train_file, tokenizer, max_seq_length=args.max_seq_length)
         dev_features, _ = read(args, dev_file, tokenizer, max_seq_length=args.max_seq_length)
     test_features, _ = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
@@ -450,7 +450,7 @@ def main():
 
     # what if we use true priors?
     # test_features, priors = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
-    if not (args.dummy_test or args.finetuned_test):
+    if not args.dummy_test:
         priors += 1e-9
 
     # dev_features = train_features + dev_features
