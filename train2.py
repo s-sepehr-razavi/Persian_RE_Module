@@ -394,6 +394,7 @@ def main():
     parser.add_argument('--memory_size', type=int, default=200, help="memory_size for ttm, originally 200, cut to new_memory_size")
     parser.add_argument('--parallel_training', action='store_true', help='using multiple gpus for training')
     parser.add_argument('--dummy_test', action='store_true', help='it will create a model that only predicts nan')
+    parser.add_argument('--finetuned_test', action='store_true', help='')
 
 
     args = parser.parse_args()
@@ -438,7 +439,7 @@ def main():
     train_file = os.path.join(args.data_dir, args.train_file)
     dev_file = os.path.join(args.data_dir, args.dev_file)
     test_file = os.path.join(args.data_dir, args.test_file)
-    if not args.dummy_test:
+    if not (args.dummy_test or args.finetuned_test):
         train_features, priors = read(args, train_file, tokenizer, max_seq_length=args.max_seq_length)
         dev_features, _ = read(args, dev_file, tokenizer, max_seq_length=args.max_seq_length)
     test_features, _ = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
@@ -449,7 +450,7 @@ def main():
 
     # what if we use true priors?
     # test_features, priors = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
-    if not args.dummy_test:
+    if not (args.dummy_test or args.finetuned_test):
         priors += 1e-9
 
     # dev_features = train_features + dev_features
@@ -485,6 +486,17 @@ def main():
         test_score, test_output = evaluate(args, model, test_features, tag="test")
         print(test_output)
         return
+    
+    if args.finetuned_test:
+        args.load_path = os.path.join(args.load_path, file_name)
+        print(args.load_path)
+        
+        print("TEST")        
+        # model = amp.initialize(model, opt_level="O1", verbosity=0)
+        model.load_state_dict(torch.load(args.save_path)) # Sep: modified to do my own tests
+        test_score, test_output = evaluate(args, model, test_features, tag="test")
+        print(test_output)
+
 
     if args.load_path == "":  # Training
         if args.model_type in ['simple', 'ttmre', 'ATLOP']:
@@ -548,7 +560,7 @@ def main():
         
         print("TEST")        
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
-        model.load_state_dict(torch.load(os.path.join(args.save_path, "pretrain_state_dict.pth"))) # Sep: modified to do my own tests
+        model.load_state_dict(torch.load(os.path.join(args.save_path, "state_dict.pth"))) # Sep: modified to do my own tests
         test_score, test_output = evaluate(args, model, test_features, tag="test")
         print(test_output)
 
