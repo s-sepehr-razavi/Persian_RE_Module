@@ -404,3 +404,25 @@ class DocREModel(nn.Module):
 
         return logits_list[0]
 
+
+class DummyModel(nn.Module):
+
+    def __init__(self, num_class):
+        super().__init__()
+        self.num_class = num_class
+
+    def forward(self,
+            input_ids=None,
+            attention_mask=None,
+            labels=None,
+            entity_pos=None,
+            hts=None,
+            sampled_docs=None
+            ):
+
+        n = len(input_ids)
+
+        logits = torch.zeros(n, self.num_class)
+        logits[:, 0] = 1
+
+        return None, logits

@@ -17,6 +17,7 @@ from tqdm import tqdm
 import random
 
 from model2 import DocREModel
+from model2 import DummyModel
 from prepro import read_docred, read_chemdisgene
 from evaluation import official_evaluate, to_official
 
@@ -389,6 +390,7 @@ def main():
     parser.add_argument('--num_layers', type=int, default=2, help="num_layers for ttm")
     parser.add_argument('--memory_size', type=int, default=200, help="memory_size for ttm, originally 200, cut to new_memory_size")
     parser.add_argument('--parallel_training', action='store_true', help='using multiple gpus for training')
+    parser.add_argument('--dummy_test', action='store_true', help='it will create a model that only predicts nan')
 
 
     args = parser.parse_args()
@@ -448,11 +450,12 @@ def main():
 
     # dev_features = train_features + dev_features
 
-    model = AutoModel.from_pretrained(
-        args.model_name_or_path,
-        from_tf=bool(".ckpt" in args.model_name_or_path),
-        config=config,
-    ).to(args.device)
+    if not args.dummy_test:
+        model = AutoModel.from_pretrained(
+            args.model_name_or_path,
+            from_tf=bool(".ckpt" in args.model_name_or_path),
+            config=config,
+        ).to(args.device)
 
     config.cls_token_id = tokenizer.cls_token_id
     config.sep_token_id = tokenizer.sep_token_id
@@ -461,12 +464,22 @@ def main():
     set_seed(args)
     # print('priors', priors); quit()
     priors = torch.tensor(priors).to(args.device)
-    model = DocREModel(args, config, priors, model, tokenizer)
+    if args.dummy_test:
+        model = DummyModel(num_class=args.num_class)
+    else:
+        model = DocREModel(args, config, priors, model, tokenizer)
+
     if args.parallel_training:
         model = nn.DataParallel(model)
     model.to(device)
 
     print(args.m_tag, args.isrank)
+
+    if args.dummy_test:                
+        print("TEST")        
+        # model = amp.initialize(model, opt_level="O1", verbosity=0)        
+        test_score, test_output = evaluate(args, model, test_features, tag="test")
+        print(test_output)
 
     if args.load_path == "":  # Training
         if args.model_type in ['simple', 'ttmre', 'ATLOP']:
@@ -528,7 +541,7 @@ def main():
         args.load_path = os.path.join(args.load_path, file_name)
         print(args.load_path)
         
-        print("TEST")
+        print("TEST")        
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
         model.load_state_dict(torch.load(os.path.join(args.save_path, "state_dict.pth")))
         test_score, test_output = evaluate(args, model, test_features, tag="test")
