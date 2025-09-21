@@ -300,4 +300,4 @@ class RelationExtractor:
 
         preds = self._get_label(outputs)
 
-        return preds, entities, feature['hts']
+        return preds, entities, feature[0]['hts']
