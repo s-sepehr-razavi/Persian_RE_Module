@@ -21,7 +21,7 @@ python train2.py --data_dir /content \
     --m 1.0 \
     --e 3.0 \
     --load_path sth \
-    --save_path /content/kaggle_output/TTM/out/train_revised_bert_ATLOP_working_ATLoss_isrank_1_m_1.0_e_3.0_seed_74/pretrain_state_dict.pth   
+    --save_path /content/kaggle_output/TTM/out  
     # --parallel_training
 
 # 3e-5, finetune {'test_F1': 83.6041966673524, 'test_F1_ign': 82.67186522190119, 're_p': 85.79528318957718, 're_r': 81.52223750573133}

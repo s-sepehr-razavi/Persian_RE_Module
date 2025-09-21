@@ -548,7 +548,7 @@ def main():
         
         print("TEST")        
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
-        model.load_state_dict(torch.load(os.path.join(args.save_path, "state_dict.pth")))
+        model.load_state_dict(torch.load(os.path.join(args.save_path, "pretrain_state_dict.pth"))) # Sep: modified to do my own tests
         test_score, test_output = evaluate(args, model, test_features, tag="test")
         print(test_output)
 
