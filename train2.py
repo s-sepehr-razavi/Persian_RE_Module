@@ -201,7 +201,8 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
             output = model(**inputs)
             logits = output[1].cpu().numpy()
 
-            sims = [model.sims[0].cpu().numpy(), model.sims[1].cpu().numpy()]
+            if not args.dummy_test:
+                sims = [model.sims[0].cpu().numpy(), model.sims[1].cpu().numpy()]
 
             if args.isrank:
                 pred = np.zeros((logits.shape[0], logits.shape[1]))
