@@ -488,9 +488,6 @@ def main():
         return
     
     if args.finetuned_test:
-        args.load_path = os.path.join(args.load_path, file_name)
-        print(args.load_path)
-        
         print("TEST")        
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
         model.load_state_dict(torch.load(args.save_path)) # Sep: modified to do my own tests
