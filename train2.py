@@ -493,7 +493,7 @@ def main():
         model.load_state_dict(torch.load(args.save_path)) # Sep: modified to do my own tests
         test_score, test_output = evaluate(args, model, test_features, tag="test")
         print(test_output)
-
+        return
 
     if args.load_path == "":  # Training
         if args.model_type in ['simple', 'ttmre', 'ATLOP']:
