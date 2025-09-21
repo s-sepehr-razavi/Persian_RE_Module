@@ -223,7 +223,7 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
     preds = np.concatenate(preds, axis=0).astype(np.float32)
     ans = to_official(preds, features)
     
-    if not args.dummy_test:
+    if not (args.dummy_test or args.finetuned_test):
         pickle.dump(sims_list, open(os.path.join(args.save_path, f"{tag}_sims.pkl"), 'wb'))
         pickle.dump(model.mu_encoder.memory_tokens.data.cpu().numpy(), open(os.path.join(args.save_path, f"{tag}_mem.pkl"), 'wb'))
     pickle.dump(preds, open(os.path.join(args.save_path, f"{tag}_preds.pkl"), 'wb'))
