@@ -226,9 +226,9 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
     if not (args.dummy_test or args.finetuned_test):
         pickle.dump(sims_list, open(os.path.join(args.save_path, f"{tag}_sims.pkl"), 'wb'))
         pickle.dump(model.mu_encoder.memory_tokens.data.cpu().numpy(), open(os.path.join(args.save_path, f"{tag}_mem.pkl"), 'wb'))
-    pickle.dump(preds, open(os.path.join(args.save_path, f"{tag}_preds.pkl"), 'wb'))
-    pickle.dump(ans, open(os.path.join(args.save_path, f"{tag}_ans.pkl"), 'wb'))
-    pickle.dump(labels, open(os.path.join(args.save_path, f"{tag}_labels.pkl"), 'wb'))
+        pickle.dump(preds, open(os.path.join(args.save_path, f"{tag}_preds.pkl"), 'wb'))
+        pickle.dump(ans, open(os.path.join(args.save_path, f"{tag}_ans.pkl"), 'wb'))
+        pickle.dump(labels, open(os.path.join(args.save_path, f"{tag}_labels.pkl"), 'wb'))
 
     if len(ans) > 0:
         if eval_top_10:
