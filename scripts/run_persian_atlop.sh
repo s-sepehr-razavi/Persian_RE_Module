@@ -1,6 +1,6 @@
 #!/bin/sh
 
-python train2.py --data_dir /content \
+python train2.py --data_dir /kaggle/working \
     --transformer_type roberta \
     --model_name_or_path HooshvareLab/roberta-fa-zwnj-base \
     --train_file train_revised.json \

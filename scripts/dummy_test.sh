@@ -1,6 +1,6 @@
 #!/bin/sh
 
-python train2.py --data_dir /kaggle/working \
+python train2.py --data_dir /content \
     --transformer_type bert \
     --train_file train_revised.json \
     --dev_file dev_revised.json \
