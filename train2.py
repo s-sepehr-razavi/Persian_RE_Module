@@ -217,12 +217,14 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
 
             preds.append(pred)
             labels.append(batch[2])
-            sims_list.append(sims)
+            if not args.dummy_test:
+                sims_list.append(sims)  
 
     preds = np.concatenate(preds, axis=0).astype(np.float32)
     ans = to_official(preds, features)
-
-    pickle.dump(sims_list, open(os.path.join(args.save_path, f"{tag}_sims.pkl"), 'wb'))
+    
+    if not args.dummy_test:
+        pickle.dump(sims_list, open(os.path.join(args.save_path, f"{tag}_sims.pkl"), 'wb'))
     pickle.dump(model.mu_encoder.memory_tokens.data.cpu().numpy(), open(os.path.join(args.save_path, f"{tag}_mem.pkl"), 'wb'))
     pickle.dump(preds, open(os.path.join(args.save_path, f"{tag}_preds.pkl"), 'wb'))
     pickle.dump(ans, open(os.path.join(args.save_path, f"{tag}_ans.pkl"), 'wb'))
