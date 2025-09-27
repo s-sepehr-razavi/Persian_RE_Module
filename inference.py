@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 from transformers import AutoTokenizer, AutoModel, AutoConfig
-from TTM.model2 import DocREModel
+from model2 import DocREModel
 from hazm import *
-from TTM.ner import PersianNER
+from ner import PersianNER
 from dataclasses import dataclass
 
 @dataclass
@@ -107,7 +107,7 @@ class RelationExtractor:
         config.sep_token_id = self.model_tokenizer.sep_token_id
         config.transformer_type = args.transformer_type
         priors = torch.ones(num_class).to(self.device) * 1e-9
-        self.docre_model = DocREModel(args, config, priors, backbone, self.docre_tokenizer).to(self.device)
+        self.docre_model = DocREModel(args, config, priors, backbone, self.model_tokenizer).to(self.device)
         self.docre_model.load_state_dict(torch.load(docre_checkpoint, map_location=self.device))
         self.docre_model.eval()
 
@@ -177,6 +177,8 @@ class RelationExtractor:
         for sent_idx, (tokens, phrase_spans) in enumerate(tokens_offsets):
             for entity in entities:
                 mentions = []
+                if not phrase_spans[entity]:
+                    continue
                 for span_start, span_end in phrase_spans[entity]:
                     mention = {
                         "name": entity,
@@ -278,13 +280,13 @@ class RelationExtractor:
 
     def predict(self, text, entities=None):
         text = self.normalizer.normalize(text)
-        entities = [self.normalizer.normalize(entity) for entity in entities]
         # Step 1: Run NER
         if not entities:
             entities = self.ner_pipeline.extract_entities(text)
             if not entities:
                 return [], [], []
 
+        entities = [self.normalizer.normalize(entity) for entity in entities]
         # Step 2: Tokenize + map entities to token spans                
         
         tokens_list, entity_mentions = self._tokenize_for_docre(text, entities)
@@ -295,8 +297,7 @@ class RelationExtractor:
         masked_feature = self._collate_fn(feature)
         # Step 5: Run DocREModel
         with torch.no_grad():
-            outputs = self.docre_model(masked_feature[0], masked_feature[1],entity_pos=masked_feature[2], hts=masked_feature[3])
-        logits = outputs[1].cpu().numpy()
+            outputs = self.docre_model(masked_feature[0], masked_feature[1],entity_pos=masked_feature[2], hts=masked_feature[3])        
 
         preds = self._get_label(outputs)
 
