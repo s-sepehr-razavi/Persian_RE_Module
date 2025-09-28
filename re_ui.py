@@ -8,18 +8,20 @@ from inference import RelationExtractor
 
 # --- Cached model loading ---
 @st.cache_resource
-def load_model():
-    rel2id = json.load(open('meta/rel2id.json', 'r')) 
+def load_model(api_key):
+    rel2id = json.load(open('meta/rel2id.json', 'r'))
     id2rel = {value: key for key, value in rel2id.items()}
     rel_info = json.load(open('meta/rel_info.json', 'r'))
-    id2rel = {value: key for key, value in rel2id.items()}
-    RE = RelationExtractor("HooshvareLab/bert-fa-base-uncased", "models_weight/pretrain_state_dict.pth", "api_key")
+    RE = RelationExtractor(
+        "HooshvareLab/bert-fa-base-uncased",
+        "models_weight/pretrain_state_dict.pth",
+        api_key
+    )
     return RE, id2rel, rel_info
 
-RE, id2rel, rel_info = load_model()
 
 # --- Relation extraction ---
-def extract_relations(text, entities=None):
+def extract_relations(RE, id2rel, rel_info, text, entities=None):
     labels, entities, hts = RE.predict(text, entities or [])
     labels_np = np.array(labels)
     res = []
@@ -36,6 +38,7 @@ def extract_relations(text, entities=None):
                     }
                 )
     return res
+
 
 # --- PyVis visualization ---
 def draw_graph_pyvis(triplets):
@@ -69,28 +72,36 @@ def draw_graph_pyvis(triplets):
     }
     """)
 
-    
     net.save_graph("graph.html")
     with open("graph.html", "r", encoding="utf-8") as f:
         html = f.read()
     components.html(html, height=600, scrolling=True)
 
+
 # --- Streamlit UI ---
 st.title("Relation Extraction UI")
 
-text_input = st.text_area(
-    "Enter text:", 
-    "Barack Obama was born in Hawaii. He served as the 44th President of the United States."
-)
-entities_input = st.text_input("Optional: Enter entities (comma separated)", "")
+# API Key Input
+api_key = st.text_input("Enter your API Key:", type="password")
 
-if st.button("Extract Relations"):
-    entities = [e.strip() for e in entities_input.split(",")] if entities_input else []
-    triplets = extract_relations(text_input, entities)
+if api_key:
+    RE, id2rel, rel_info = load_model(api_key)
 
-    st.subheader("Extracted Triplets")
-    st.json(triplets)
+    text_input = st.text_area(
+        "Enter text:", 
+        ""
+    )
+    entities_input = st.text_input("Optional: Enter entities (comma separated)", "")
 
-    if triplets:
-        st.subheader("Interactive Graph")
-        draw_graph_pyvis(triplets)
+    if st.button("Extract Relations"):
+        entities = [e.strip() for e in entities_input.split(",")] if entities_input else []
+        triplets = extract_relations(RE, id2rel, rel_info, text_input, entities)
+
+        st.subheader("Extracted Triplets")
+        st.json(triplets)
+
+        if triplets:
+            st.subheader("Interactive Graph")
+            draw_graph_pyvis(triplets)
+else:
+    st.warning("Please enter your API key to continue.")
