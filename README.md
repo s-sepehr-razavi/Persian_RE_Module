@@ -1,30 +1,35 @@
-# TTM-RE
-ACL2024: [TTM-RE Memory-Augmented Document-Level Relation Extraction](https://aclanthology.org/2024.acl-long.26/)
+# 🇮🇷 ParsRelEx: Persian Relation Extraction
 
-![image](https://github.com/user-attachments/assets/68cbbfb7-d0ed-478e-8f63-5e2240dca5da)
+## 🌟 Overview
 
-Please see the scripts folder for example run files. 
-Specifically, see run_roberta_rank.sh for the best results.
-Weights are released for roberta-large in the GitHub releases: https://github.com/chufangao/TTM-RE/releases/tag/v0.2
+**ParsRelEx** is a project focused on **Relation Extraction (RE)** for the **Persian (Farsi) language**. It leverages the state-of-the-art **ATLOP** (Adaptive Thresholding and Ordering for Link Prediction) model architecture, fine-tuned using the **ParsBERT** model as its backbone, to accurately identify semantic relationships between entities in Persian text.
 
-Please cite: 
-```
-@inproceedings{gao-etal-2024-ttm,
-    title = "{TTM}-{RE}: Memory-Augmented Document-Level Relation Extraction",
-    author = "Gao, Chufan  and
-      Wang, Xuan  and
-      Sun, Jimeng",
-    editor = "Ku, Lun-Wei  and
-      Martins, Andre  and
-      Srikumar, Vivek",
-    booktitle = "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
-    month = aug,
-    year = "2024",
-    address = "Bangkok, Thailand",
-    publisher = "Association for Computational Linguistics",
-    url = "https://aclanthology.org/2024.acl-long.26",
-    doi = "10.18653/v1/2024.acl-long.26",
-    pages = "443--458",
-```
+This repository provides:
+1. The **training code and methodology** based on the ATLOP architecture.
+2. A standalone **Inference Module** for practical, zero-shot relation extraction.
+3. A simple **Graphical User Interface (GUI)** for interactive usage and demonstration.
 
-Much thanks to https://github.com/www-Ye/SSR-PU and https://github.com/wzhouad/ATLOP for making their code open source.
+---
+
+## 🚀 Features
+
+* **High Accuracy:** Uses the robust **ATLOP** model for effective relation extraction.
+* **Persian-Native:** Employs **ParsBERT** to capture the nuances of the Persian language.
+* **Easy Inference:** A dedicated Python module for quick and simple predictions.
+* **Interactive UI:** A user-friendly interface for non-programmatic testing.
+
+---
+
+## ⚙️ Installation and Setup
+
+To use the inference module, follow these steps:
+
+### 1. Prerequisites
+
+Ensure you have **Python 3.8+** installed.
+
+### 2. Clone the Repository
+
+```bash
+git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
+cd your-repo-name
