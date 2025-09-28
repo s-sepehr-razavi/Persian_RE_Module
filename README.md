@@ -31,5 +31,4 @@ Ensure you have **Python 3.8+** installed.
 ### 2. Clone the Repository
 
 ```bash
-git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-cd your-repo-name
+git clone https://github.com/s-sepehr-razavi/Persian_RE_Module.git
