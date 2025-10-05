@@ -214,6 +214,64 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
     print("# rels per doc", 1. * rel_nums / i_line)
     return features, re_fre
 
+# def omitting_empty_entities(sample):
+
+#     labels = sample['labels']
+#     vertexSet = sample['vertexSet']
+
+#     indicies = []
+#     new_vertexSet = []
+#     for i, v in enumerate(vertexSet):
+#         if len(v) == 0:
+#             indicies.append(i)
+#         else:
+#             new_vertexSet.append(v)
+    
+#     new_labels = []
+#     for label in labels:
+#         if label['h'] in indicies or label['t'] in indicies:
+#             continue
+#         else:
+#             for index in indicies:
+#                 if index < label['h']:
+#                     label['h'] -= 1 
+#                 if index < label['t']:
+#                     label['t'] -= 1 
+#             new_labels.append(label)
+        
+#     sample['labels'] = new_labels
+#     sample['vertexSet'] = new_vertexSet
+#     return sample
+
+def omitting_empty_entities(sample):
+    labels = sample['labels']
+    vertexSet = sample['vertexSet']
+
+    # Build mapping from old indices to new indices
+    index_map = {}
+    new_vertexSet = []
+    for old_idx, v in enumerate(vertexSet):
+        if len(v) > 0:
+            new_idx = len(new_vertexSet)
+            new_vertexSet.append(v)
+            index_map[old_idx] = new_idx
+
+    # Update labels
+    new_labels = []
+    for label in labels:
+        h, t = label['h'], label['t']
+        if h not in index_map or t not in index_map:
+            continue  # skip labels pointing to removed entities
+        new_label = label.copy()
+        new_label['h'] = index_map[h]
+        new_label['t'] = index_map[t]
+        new_labels.append(new_label)
+
+    sample['labels'] = new_labels
+    sample['vertexSet'] = new_vertexSet
+    return sample
+
+
 def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
     i_line = 0
     pos_samples = 0
@@ -229,8 +287,9 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
         data = data[:max_docs]
 
     re_fre = np.zeros(len(docred_rel2id) - 1)
-    # for idx, sample in tqdm(enumerate(data), desc="Example"):
+    # for idx, sample in tqdm(enumerate(data), desc="Example"):    
     for idx, sample in enumerate(tqdm(data)):
+        sample = omitting_empty_entities(sample)
         sents = []
         sent_map = []
 
@@ -239,7 +298,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
         for entity in entities:
             for mention in entity:
                 sent_id = mention["sent_id"]
-                pos = mention["pos"]
+                pos = mention["pos"]                
                 entity_start.append((sent_id, pos[0],))
                 entity_end.append((sent_id, pos[1] - 1,))
         for i_s, sent in enumerate(sample['sents']):
@@ -299,13 +358,27 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                     hts.append([h, t])
                     neg_samples += 1
 
-        assert len(relations) == len(entities) * (len(entities) - 1)
+        if len(relations) != len(entities) * (len(entities) - 1):
+            print(f"entities")
+            print(f"hts count: {len(hts)} relations count: {len(relations)}")
+            print(hts)
+            for i, r in enumerate(hts):
+                for j, s in enumerate(hts):
+                    if i != j and r[0] == s[0] and r[1] == s[1]:
+                        print(f"the indices that have the same head and tail {i, j}")
+
+            print(len(relations))
+            print(len(entities) * (len(entities) - 1))
+            print("mismatch in entity/rel count")
+            continue
+
 
         sents = sents[:max_seq_length - 2]
         input_ids = tokenizer.convert_tokens_to_ids(sents)
         input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
 
-        i_line += 1
+
+        i_line += 1        
         feature = {'input_ids': input_ids,
                 'entity_pos': entity_pos,
                 'labels': relations,

@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import copy
 import pickle
+import torch.nn as nn
 # from apex import amp
 # import ujson as json
 from torch.utils.data import DataLoader
@@ -16,6 +17,7 @@ from tqdm import tqdm
 import random
 
 from model2 import DocREModel
+from model2 import DummyModel
 from prepro import read_docred, read_chemdisgene
 from evaluation import official_evaluate, to_official
 
@@ -164,7 +166,8 @@ def cal_val_risk(args, model, features, tag="dev"):
     preds = np.concatenate(preds, axis=0).astype(np.float32)
     ans = to_official(preds, features)
     if len(ans) > 0:
-        best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
+        # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
+        best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
         output = {
             tag + "_F1": best_f1 * 100,
             tag + "_F1_ign": best_f1_ign * 100,
@@ -198,7 +201,8 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
             output = model(**inputs)
             logits = output[1].cpu().numpy()
 
-            sims = [model.sims[0].cpu().numpy(), model.sims[1].cpu().numpy()]
+            if not (args.dummy_test or args.finetuned_test):
+                sims = [model.sims[0].cpu().numpy(), model.sims[1].cpu().numpy()]
 
             if args.isrank:
                 pred = np.zeros((logits.shape[0], logits.shape[1]))
@@ -213,25 +217,30 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
 
             preds.append(pred)
             labels.append(batch[2])
-            sims_list.append(sims)
+            if not (args.dummy_test or args.finetuned_test):
+                sims_list.append(sims)  
 
     preds = np.concatenate(preds, axis=0).astype(np.float32)
     ans = to_official(preds, features)
-
-    pickle.dump(sims_list, open(os.path.join(args.save_path, f"{tag}_sims.pkl"), 'wb'))
-    pickle.dump(model.mu_encoder.memory_tokens.data.cpu().numpy(), open(os.path.join(args.save_path, f"{tag}_mem.pkl"), 'wb'))
-    pickle.dump(preds, open(os.path.join(args.save_path, f"{tag}_preds.pkl"), 'wb'))
-    pickle.dump(ans, open(os.path.join(args.save_path, f"{tag}_ans.pkl"), 'wb'))
-    pickle.dump(labels, open(os.path.join(args.save_path, f"{tag}_labels.pkl"), 'wb'))
+    
+    if not (args.dummy_test or args.finetuned_test):
+        pickle.dump(sims_list, open(os.path.join(args.save_path, f"{tag}_sims.pkl"), 'wb'))
+        pickle.dump(model.mu_encoder.memory_tokens.data.cpu().numpy(), open(os.path.join(args.save_path, f"{tag}_mem.pkl"), 'wb'))
+        pickle.dump(preds, open(os.path.join(args.save_path, f"{tag}_preds.pkl"), 'wb'))
+        pickle.dump(ans, open(os.path.join(args.save_path, f"{tag}_ans.pkl"), 'wb'))
+        pickle.dump(labels, open(os.path.join(args.save_path, f"{tag}_labels.pkl"), 'wb'))
 
     if len(ans) > 0:
         if eval_top_10:
-            best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
+            # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
+            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
             print("top10", best_f1, best_f1_ign, re_p, re_r)
-            best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testbottom90', args=args)
+            # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testbottom90', args=args)
+            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
             print("testbottom90", best_f1, best_f1_ign, re_p, re_r)
             
-        best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
+        # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
+        best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
         output = {
             tag + "_F1": best_f1 * 100,
             tag + "_F1_ign": best_f1_ign * 100,
@@ -373,7 +382,7 @@ def main():
                         help="random seed for initialization")
     parser.add_argument("--num_class", type=int, default=97,
                         help="Number of relation types in dataset.")
-    parser.add_argument("--isrank", type=int, default='1 means use ranking loss, 0 means not use')
+    parser.add_argument("--isrank", type=int, default=1, help='1 means use ranking loss, 0 means not use')
     parser.add_argument("--m_tag", type=str, default='PN/PU/S-PU')
     parser.add_argument('--beta', type=float, default=0.0, help='beta of pu learning (default 0.0)')
     parser.add_argument('--gamma', type=float, default=1.0, help='gamma of pu learning (default 1.0)')
@@ -383,26 +392,33 @@ def main():
 
     parser.add_argument('--num_layers', type=int, default=2, help="num_layers for ttm")
     parser.add_argument('--memory_size', type=int, default=200, help="memory_size for ttm, originally 200, cut to new_memory_size")
+    parser.add_argument('--parallel_training', action='store_true', help='using multiple gpus for training')
+    parser.add_argument('--dummy_test', action='store_true', help='it will create a model that only predicts nan')
+    parser.add_argument('--finetuned_test', action='store_true', help='')
+
 
     args = parser.parse_args()
     # assert args.is_rank == 1
-
-    file_name = "{}_{}_{}_{}_{}_isrank_{}_m_{}_e_{}_seed_{}".format(
-        args.train_file.split('.')[0],
-        args.transformer_type,
-        args.model_type,
-        args.data_dir.split('/')[-1],
-        args.m_tag,
-        str(args.isrank),
-        args.m,
-        args.e,
-        str(args.seed))
-    args.save_path = os.path.join(args.save_path, file_name)
+    if not args.finetuned_test:
+        file_name = "{}_{}_{}_{}_{}_isrank_{}_m_{}_e_{}_seed_{}".format(
+            args.train_file.split('.')[0],
+            args.transformer_type,
+            args.model_type,
+            args.data_dir.split('/')[-1],
+            args.m_tag,
+            str(args.isrank),
+            args.m,
+            args.e,
+            str(args.seed))
+        args.save_path = os.path.join(args.save_path, file_name)
     if not os.path.exists(args.save_path):
         os.mkdir(args.save_path)
     print(args.save_path)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if args.parallel_training:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.n_gpu = torch.cuda.device_count()
     args.device = device
     # print({k:str(v) for k,v in vars(args).items()}); quit()
@@ -423,9 +439,9 @@ def main():
     train_file = os.path.join(args.data_dir, args.train_file)
     dev_file = os.path.join(args.data_dir, args.dev_file)
     test_file = os.path.join(args.data_dir, args.test_file)
-
-    train_features, priors = read(args, train_file, tokenizer, max_seq_length=args.max_seq_length)
-    dev_features, _ = read(args, dev_file, tokenizer, max_seq_length=args.max_seq_length)
+    if not args.dummy_test:
+        train_features, priors = read(args, train_file, tokenizer, max_seq_length=args.max_seq_length)
+        dev_features, _ = read(args, dev_file, tokenizer, max_seq_length=args.max_seq_length)
     test_features, _ = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
 
     # train_features = train_features[:100]
@@ -434,15 +450,17 @@ def main():
 
     # what if we use true priors?
     # test_features, priors = read(args, test_file, tokenizer, max_seq_length=args.max_seq_length)
-    priors += 1e-9
+    if not args.dummy_test:
+        priors += 1e-9
 
     # dev_features = train_features + dev_features
 
-    model = AutoModel.from_pretrained(
-        args.model_name_or_path,
-        from_tf=bool(".ckpt" in args.model_name_or_path),
-        config=config,
-    ).to(args.device)
+    if not args.dummy_test:
+        model = AutoModel.from_pretrained(
+            args.model_name_or_path,
+            from_tf=bool(".ckpt" in args.model_name_or_path),
+            config=config,
+        ).to(args.device)
 
     config.cls_token_id = tokenizer.cls_token_id
     config.sep_token_id = tokenizer.sep_token_id
@@ -450,18 +468,39 @@ def main():
 
     set_seed(args)
     # print('priors', priors); quit()
-    priors = torch.tensor(priors).to(args.device)
-    model = DocREModel(args, config, priors, model, tokenizer)
-    model.to(0)
+    if args.dummy_test:
+        model = DummyModel(num_class=args.num_class)
+    else:
+        model = DocREModel(args, config, priors, model, tokenizer)
+        priors = torch.tensor(priors).to(args.device)
+
+    if args.parallel_training:
+        model = nn.DataParallel(model)
+    model.to(device)
 
     print(args.m_tag, args.isrank)
+
+    if args.dummy_test:                
+        print("TEST")        
+        # model = amp.initialize(model, opt_level="O1", verbosity=0)        
+        test_score, test_output = evaluate(args, model, test_features, tag="test")
+        print(test_output)
+        return
+    
+    if args.finetuned_test:
+        print("TEST")        
+        # model = amp.initialize(model, opt_level="O1", verbosity=0)
+        model.load_state_dict(torch.load(args.save_path)) # Sep: modified to do my own tests
+        test_score, test_output = evaluate(args, model, test_features, tag="test")
+        print(test_output)
+        return
 
     if args.load_path == "":  # Training
         if args.model_type in ['simple', 'ttmre', 'ATLOP']:
             print("PRETRAINING")
             print("pretrain distant", args.pretrain_distant)
             temp_epochs = args.num_train_epochs
-            args.num_train_epochs = 2
+            # args.num_train_epochs = 2
             if args.pretrain_distant == 0: # pretrain on train and quit()
                 train(args, model, train_features, dev_features, lr=1e-4)
                 torch.save(model.state_dict(), os.path.join(args.save_path, "pretrain_state_dict.pth")); quit()
@@ -516,9 +555,9 @@ def main():
         args.load_path = os.path.join(args.load_path, file_name)
         print(args.load_path)
         
-        print("TEST")
+        print("TEST")        
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
-        model.load_state_dict(torch.load(os.path.join(args.save_path, "state_dict.pth")))
+        model.load_state_dict(torch.load(os.path.join(args.save_path, "state_dict.pth"))) # Sep: modified to do my own tests
         test_score, test_output = evaluate(args, model, test_features, tag="test")
         print(test_output)
 
