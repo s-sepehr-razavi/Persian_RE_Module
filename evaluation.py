@@ -2,6 +2,8 @@ import os
 import os.path
 import json
 import numpy as np
+from collections import defaultdict
+import pandas as pd
 
 rel2id = json.load(open('meta/rel2id.json', 'r'))
 id2rel = {value: key for key, value in rel2id.items()}
@@ -88,139 +90,131 @@ def gen_train_facts(data_file_name, truth_dir):
     return fact_in_train
 
 
-def official_evaluate(tmp, path, tag, args):
-    '''
-        Adapted from the official evaluation code
-    '''
+def official_evaluate(tmp, path, tag, args, save_per_relation_path=None):
+    """
+    Adapted from the official evaluation code + per-relation performance computation.
+    """
     truth_dir = os.path.join(path, 'ref')
-
-    if not os.path.exists(truth_dir):
-        os.makedirs(truth_dir)
+    os.makedirs(truth_dir, exist_ok=True)
 
     fact_in_train_annotated = gen_train_facts(os.path.join(path, args.train_file), truth_dir)
-    # fact_in_train_distant = gen_train_facts(os.path.join(path, "train_distant.json"), truth_dir)
 
+    # Load truth data
     if tag == 'dev':
         truth = json.load(open(os.path.join(path, args.dev_file)))
-    # elif tag == 'testtop10':
-    #     truth = json.load(open(os.path.join(path, args.test_file_top10)))
-    # elif tag == 'testbottom90':
-    #     truth = json.load(open(os.path.join(path, args.test_file_bottom90)))
     else:
         truth = json.load(open(os.path.join(path, args.test_file)))
 
     std = {}
     tot_evidences = 0
-    titleset = set([])
-
+    titleset = set()
     title2vectexSet = {}
+
     for x in truth:
         x = omitting_empty_entities(x)
         title = x['title']
         titleset.add(title)
-
         vertexSet = x['vertexSet']
         title2vectexSet[title] = vertexSet
 
         for label in x['labels']:
-            
-            if tag == 'testtop10':
-                if label['r'] not in top10:
-                    continue
-            elif tag == 'testbottom90':
-                if label['r'] in top10:
-                    continue
-
             r = label['r']
-            h_idx = label['h']
-            t_idx = label['t']
+            h_idx, t_idx = label['h'], label['t']
             std[(title, r, h_idx, t_idx)] = set([1])
-            tot_evidences += len([1])
+            tot_evidences += 1
 
     tot_relations = len(std)
+
+    # Deduplicate predictions
     tmp.sort(key=lambda x: (x['title'], x['h_idx'], x['t_idx'], x['r']))
     submission_answer = [tmp[0]]
     for i in range(1, len(tmp)):
-        x = tmp[i]
-        y = tmp[i - 1]
+        x, y = tmp[i], tmp[i - 1]
         if (x['title'], x['h_idx'], x['t_idx'], x['r']) != (y['title'], y['h_idx'], y['t_idx'], y['r']):
-            submission_answer.append(tmp[i])
+            submission_answer.append(x)
 
+    # Overall counters
     correct_re = 0
     correct_evidence = 0
     pred_evi = 0
-
     correct_in_train_annotated = 0
-    # correct_in_train_distant = 0
-    titleset2 = set([])
+
+    # NEW: Per-relation stats
+    rel_stats = defaultdict(lambda: {'TP': 0, 'FP': 0, 'FN': 0})
+
+    titleset2 = set()
     for x in submission_answer:
-        title = x['title']
-        h_idx = x['h_idx']
-        t_idx = x['t_idx']
-        r = x['r']
-
-        if tag == 'testtop10':
-            if r not in top10:
-                continue
-        elif tag == 'testbottom90':
-            if r in top10:
-                continue
-
+        title, h_idx, t_idx, r = x['title'], x['h_idx'], x['t_idx'], x['r']
         titleset2.add(title)
+
         if title not in title2vectexSet:
             continue
         vertexSet = title2vectexSet[title]
 
-        if 'evidence' in x:
-            evi = set(x['evidence'])
-        else:
-            evi = set([])
+        evi = set(x.get('evidence', []))
         pred_evi += len(evi)
 
+        # Count predictions
         if (title, r, h_idx, t_idx) in std:
             correct_re += 1
+            rel_stats[r]['TP'] += 1
             stdevi = std[(title, r, h_idx, t_idx)]
             correct_evidence += len(stdevi & evi)
-            in_train_annotated = False
-            #  in_train_distant = False
-            for n1 in vertexSet[h_idx]:
-                for n2 in vertexSet[t_idx]:
-                    if (n1['name'], n2['name'], r) in fact_in_train_annotated:
-                        in_train_annotated = True
-                    # if (n1['name'], n2['name'], r) in fact_in_train_distant:
-                    #     in_train_distant = True
 
+            # Mark if in train
+            in_train_annotated = any(
+                (n1['name'], n2['name'], r) in fact_in_train_annotated
+                for n1 in vertexSet[h_idx] for n2 in vertexSet[t_idx]
+            )
             if in_train_annotated:
                 correct_in_train_annotated += 1
-            # if in_train_distant:
-            #     correct_in_train_distant += 1
+        else:
+            rel_stats[r]['FP'] += 1
 
-    re_p = 1.0 * correct_re / len(submission_answer)
-    re_r = 1.0 * correct_re / tot_relations
-    if re_p + re_r == 0:
-        re_f1 = 0
+    # FN per relation (ground truth missed)
+    relations_set = {(x['title'], x['r'], x['h_idx'], x['t_idx']) for x in submission_answer}
+    for (title, r, h_idx, t_idx) in std.keys():
+        if (title, r, h_idx, t_idx) not in relations_set:
+            rel_stats[r]['FN'] += 1
+
+    # === Overall metrics ===
+    re_p = correct_re / len(submission_answer) if submission_answer else 0
+    re_r = correct_re / tot_relations if tot_relations else 0
+    re_f1 = 2 * re_p * re_r / (re_p + re_r) if (re_p + re_r) > 0 else 0
+
+    evi_p = correct_evidence / pred_evi if pred_evi > 0 else 0
+    evi_r = correct_evidence / tot_evidences if tot_evidences > 0 else 0
+    evi_f1 = 2 * evi_p * evi_r / (evi_p + evi_r) if (evi_p + evi_r) > 0 else 0
+
+    re_p_ignore_train_annotated = (correct_re - correct_in_train_annotated) / (
+        (len(submission_answer) - correct_in_train_annotated + 1e-5)
+    )
+    re_f1_ignore_train_annotated = 2 * re_p_ignore_train_annotated * re_r / (
+        re_p_ignore_train_annotated + re_r
+    ) if (re_p_ignore_train_annotated + re_r) > 0 else 0
+
+    # === Per-relation metrics ===
+    rel_metrics = []
+    for r, v in rel_stats.items():
+        TP, FP, FN = v['TP'], v['FP'], v['FN']
+        prec = TP / (TP + FP) if (TP + FP) > 0 else 0
+        rec = TP / (TP + FN) if (TP + FN) > 0 else 0
+        f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
+        rel_metrics.append({
+            'relation': r,
+            'precision': prec,
+            'recall': rec,
+            'f1': f1,
+            'tp': TP,
+            'fp': FP,
+            'fn': FN
+        })
+
+    df = pd.DataFrame(rel_metrics).sort_values(by='f1', ascending=False)
+
+    if save_per_relation_path:
+        df.to_csv(save_per_relation_path, index=False)
     else:
-        re_f1 = 2.0 * re_p * re_r / (re_p + re_r)
+        print(df.head(20))  # print top 20 relations by F1
 
-    evi_p = 1.0 * correct_evidence / pred_evi if pred_evi > 0 else 0
-    evi_r = 1.0 * correct_evidence / tot_evidences
-    if evi_p + evi_r == 0:
-        evi_f1 = 0
-    else:
-        evi_f1 = 2.0 * evi_p * evi_r / (evi_p + evi_r)
-
-    re_p_ignore_train_annotated = 1.0 * (correct_re - correct_in_train_annotated) / (len(submission_answer) - correct_in_train_annotated + 1e-5)
-    # re_p_ignore_train = 1.0 * (correct_re - correct_in_train_distant) / (len(submission_answer) - correct_in_train_distant + 1e-5)
-
-    if re_p_ignore_train_annotated + re_r == 0:
-        re_f1_ignore_train_annotated = 0
-    else:
-        re_f1_ignore_train_annotated = 2.0 * re_p_ignore_train_annotated * re_r / (re_p_ignore_train_annotated + re_r)
-
-    # if re_p_ignore_train + re_r == 0:
-    #     re_f1_ignore_train = 0
-    # else:
-    #     re_f1_ignore_train = 2.0 * re_p_ignore_train * re_r / (re_p_ignore_train + re_r)
-
-    # return re_f1, evi_f1, re_f1_ignore_train_annotated, re_f1_ignore_train, re_p, re_r
-    return re_f1, evi_f1, re_f1_ignore_train_annotated, re_p, re_r
+    return re_f1, evi_f1, re_f1_ignore_train_annotated, re_p, re_r, df
