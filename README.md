@@ -53,7 +53,7 @@ To run the model, you must download the **pre-trained model weights**.
 | :--------------------------- | :---------------------------------- |
 | `parsrelex_atlop_weights.pt` | The final fine-tuned model weights. |
 
-**Download the weights from [INSERT MODEL WEIGHTS DOWNLOAD LINK HERE]** and place the file in the directory named as models_weight.
+**Download the weights from [https://drive.google.com/file/d/1GZVEWd0XuZ_tsvsqUi01eDJ14UpONXJh/view?usp=sharing]** and place the file in the directory named as models_weight.
 
 ---
 
