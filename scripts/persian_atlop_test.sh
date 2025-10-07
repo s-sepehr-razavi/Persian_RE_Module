@@ -20,7 +20,7 @@ python train2.py --data_dir /content \
     --model_type ATLOP \
     --m 1.0 \
     --e 3.0 \
-    --save_path /content/kaggle_output/TTM/out/train_revised_bert_ATLOP_working_ATLoss_isrank_1_m_1.0_e_3.0_seed_74/pretrain_state_dict.pth \
+    --pretrained_model_path /content/Persian_RE_Module/models_weight/pretrain_state_dict.pth \
     --finetuned_test
     # --parallel_training
 

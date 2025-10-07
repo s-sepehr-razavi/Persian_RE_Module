@@ -350,6 +350,7 @@ def main():
     parser.add_argument("--dev_file", default="dev.json", type=str)
     parser.add_argument("--test_file", default="test.json", type=str)
     parser.add_argument("--save_path", default="out", type=str)
+    parser.add_argument("--pretrained_model_path", default="", type=str)
     parser.add_argument("--load_path", default="", type=str)
 
     parser.add_argument("--config_name", default="", type=str,
@@ -490,7 +491,7 @@ def main():
     if args.finetuned_test:
         print("TEST")        
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
-        model.load_state_dict(torch.load(args.save_path)) # Sep: modified to do my own tests
+        model.load_state_dict(torch.load(args.pretrained_model_path)) # Sep: modified to do my own tests
         test_score, test_output = evaluate(args, model, test_features, tag="test", save_path=args.save_path)
         print(test_output)
         return
