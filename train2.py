@@ -183,7 +183,7 @@ def cal_val_risk(args, model, features, tag="dev"):
     # return np.stack(val_risk, axis=0).sum(axis=0) / nums,  output            
     return [-best_f1 * 100],  output
 
-def evaluate(args, model, features, tag="test", eval_top_10=False):
+def evaluate(args, model, features, tag="test", eval_top_10=False, save_path = None):
     dataloader = DataLoader(features, batch_size=args.test_batch_size, shuffle=False, collate_fn=collate_fn, drop_last=False)
     preds = []
     sims_list = []
@@ -233,14 +233,14 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
     if len(ans) > 0:
         if eval_top_10:
             # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
-            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
+            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args, save_per_relation_path=save_path)
             print("top10", best_f1, best_f1_ign, re_p, re_r)
             # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testbottom90', args=args)
-            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args)
+            best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testtop10', args=args, save_per_relation_path=save_path)
             print("testbottom90", best_f1, best_f1_ign, re_p, re_r)
             
         # best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
-        best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
+        best_f1, _, best_f1_ign, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args, save_per_relation_path=save_path)
         output = {
             tag + "_F1": best_f1 * 100,
             tag + "_F1_ign": best_f1_ign * 100,
@@ -491,7 +491,7 @@ def main():
         print("TEST")        
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
         model.load_state_dict(torch.load(args.save_path)) # Sep: modified to do my own tests
-        test_score, test_output = evaluate(args, model, test_features, tag="test")
+        test_score, test_output = evaluate(args, model, test_features, tag="test", save_path=args.save_path)
         print(test_output)
         return
 

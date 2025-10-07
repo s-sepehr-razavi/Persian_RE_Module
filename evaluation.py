@@ -214,7 +214,5 @@ def official_evaluate(tmp, path, tag, args, save_per_relation_path=None):
 
     if save_per_relation_path:
         df.to_csv(save_per_relation_path, index=False)
-    else:
-        print(df.head(20))  # print top 20 relations by F1
 
-    return re_f1, evi_f1, re_f1_ignore_train_annotated, re_p, re_r, df
+    return re_f1, evi_f1, re_f1_ignore_train_annotated, re_p, re_r
