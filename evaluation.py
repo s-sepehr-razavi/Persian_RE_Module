@@ -213,6 +213,6 @@ def official_evaluate(tmp, path, tag, args, save_per_relation_path=None):
     df = pd.DataFrame(rel_metrics).sort_values(by='f1', ascending=False)
 
     if save_per_relation_path:
-        df.to_csv(save_per_relation_path, index=False)
+        df.to_csv(os.path.join(save_per_relation_path, "per_relation.csv"), index=False)
 
     return re_f1, evi_f1, re_f1_ignore_train_annotated, re_p, re_r
