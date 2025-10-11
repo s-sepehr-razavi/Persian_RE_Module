@@ -1,8 +1,8 @@
 #!/bin/sh
 
 python train2.py --data_dir /content \
-    --transformer_type bert \
-    --model_name_or_path HooshvareLab/roberta-fa-zwnj-base \
+    --transformer_type roberta \
+    --model_name_or_path HooshvareLab/bert-fa-base-uncased \
     --train_file train_revised.json \
     --dev_file dev_revised.json \
     --test_file test_revised.json \
@@ -20,7 +20,7 @@ python train2.py --data_dir /content \
     --model_type ATLOP \
     --m 1.0 \
     --e 3.0 \
-    --pretrained_model_path /content/Persian_RE_Module/models_weight/pretrain_state_dict.pth \
+    --pretrained_model_path /content/Persian_RE_Module/models_weight/roberta_pretrain_state_dict.pth \
     --finetuned_test
     # --parallel_training
 
