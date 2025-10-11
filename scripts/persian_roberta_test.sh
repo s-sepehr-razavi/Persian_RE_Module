@@ -2,7 +2,7 @@
 
 python train2.py --data_dir /content \
     --transformer_type roberta \
-    --model_name_or_path HooshvareLab/bert-fa-base-uncased \
+    --model_name_or_path HooshvareLab/roberta-fa-zwnj-base \
     --train_file train_revised.json \
     --dev_file dev_revised.json \
     --test_file test_revised.json \
